@@ -6,6 +6,7 @@ local Button = require("ui/widget/button")
 local ButtonDialog = require("ui/widget/buttondialog")
 local Device = require("device")
 local Event = require("ui/event")
+local ExtraTabs = require("modules.extra_tabs")
 local FileManager = require("apps/filemanager/filemanager")
 local FileChooser = require("ui/widget/filechooser")
 local FocusManager = require("ui/widget/focusmanager")
@@ -19,6 +20,7 @@ local LeftContainer = require("ui/widget/container/leftcontainer")
 local MetadataFacetDropdown = require("modules.metadata_facet_dropdown")
 local NetworkMgr = require("ui/network/manager")
 local OverlapGroup = require("ui/widget/overlapgroup")
+local PluginShare = require("pluginshare")
 local ReadHistory = require("readhistory")
 local RightContainer = require("ui/widget/container/rightcontainer")
 local StatusIcon = require("modules.shared.status_icon")
@@ -32,6 +34,7 @@ local VerticalGroup = require("ui/widget/verticalgroup")
 local VerticalSpan = require("ui/widget/verticalspan")
 local VirtualPath = require("modules.virtual_path")
 local _ = require("gettext")
+local logger = require("logger")
 local Screen = Device.screen
 local Size = require("ui/size")
 
@@ -341,16 +344,24 @@ function MetadataTabsTitleBar:init()
         authors = self.authors_tab,
         tags = self.tags_tab,
     }
+    self.all_tabs = { self.books_tab, self.series_tab, self.authors_tab, self.tags_tab }
+    local builtin_tab_count = #self.all_tabs
+    for _, extra in ipairs(ExtraTabs.collect(PluginShare.plainui_extra_tabs, self.tabs_by_key, logger.warn)) do
+        local tab = makeTab(extra.key, extra.text, function()
+            extra.callback(file_manager)
+        end, extra.hold_callback)
+        self.tabs_by_key[extra.key] = tab
+        table.insert(self.all_tabs, tab)
+    end
     self.tab_label_height = self.books_button.label_container.dimen.h
     self.back_chevron_hit_width = self.tab_label_height + self.tab_padding_h
     self.tabs_group = HorizontalGroup:new{
         align = "bottom",
         allow_mirroring = false,
-        self.books_tab,
-        self.series_tab,
-        self.authors_tab,
-        self.tags_tab,
     }
+    for _, tab in ipairs(self.all_tabs) do
+        table.insert(self.tabs_group, tab)
+    end
     local tabs_size = self.tabs_group:getSize()
     self.titlebar_height = math.max(self.titlebar_height, tabs_size.h)
     local titlebar_body_height = self.titlebar_height
@@ -406,6 +417,16 @@ function MetadataTabsTitleBar:init()
     self.wifi_width = status_widths.wifi
     self.battery_width = status_widths.battery
     self.status_width = self.night_mode_width + self.frontlight_width + self.wifi_width + self.battery_width + 3 * self.status_gap
+    -- Registered tabs are dropped, last first, rather than run into the status icons.
+    local tabs_width_limit = self.width - self.status_width - self.tab_padding_h
+    while #self.all_tabs > builtin_tab_count and self.tabs_group:getSize().w > tabs_width_limit do
+        local tab = table.remove(self.all_tabs)
+        table.remove(self.tabs_group)
+        self.tabs_group:resetLayout()
+        self.tabs_by_key[tab.key] = nil
+        tab:free()
+        logger.warn("Plain UI: no room for tab:", tab.key)
+    end
     local function statusTouchRange(button_key)
         return function()
             local button = self[button_key]
@@ -835,7 +856,7 @@ function MetadataTabsTitleBar:updateSelectedTab(refresh)
     end
 
     self.selected_tab_key = selected_tab_key
-    for _, tab in ipairs({ self.books_tab, self.series_tab, self.authors_tab, self.tags_tab }) do
+    for _, tab in ipairs(self.all_tabs) do
         self:setTabSelected(tab, tab.key == selected_tab_key)
     end
 
@@ -967,11 +988,10 @@ end
 function MetadataTabsTitleBar:generateHorizontalLayout()
     local row = {
         self.back_button,
-        self.books_button,
-        self.series_button,
-        self.authors_button,
-        self.tags_button,
     }
+    for _, tab in ipairs(self.all_tabs) do
+        table.insert(row, tab.button)
+    end
     table.insert(row, self.frontlight_button)
     table.insert(row, self.night_mode_button)
     table.insert(row, self.wifi_button)
@@ -984,11 +1004,10 @@ end
 function MetadataTabsTitleBar:generateVerticalLayout()
     local layout = {
         { self.back_button },
-        { self.books_button },
-        { self.series_button },
-        { self.authors_button },
-        { self.tags_button },
     }
+    for _, tab in ipairs(self.all_tabs) do
+        table.insert(layout, { tab.button })
+    end
     table.insert(layout, { self.frontlight_button })
     table.insert(layout, { self.night_mode_button })
     table.insert(layout, { self.wifi_button })

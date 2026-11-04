@@ -50,7 +50,7 @@ Tested with KOReader `v2026.03-81-g41c9e02b5`. Other KOReader versions may work 
 
 ## Development and releases
 
-Use `dev` for work in progress. Run `lua tests/run.lua` for all 17 suites, then build and verify the installable ZIP:
+Use `dev` for work in progress. Run `lua tests/run.lua` for all 18 suites, then build and verify the installable ZIP:
 
 ```sh
 python3 scripts/build_release.py /tmp/plainui.koplugin.zip
@@ -68,6 +68,26 @@ To enlarge cover badges (default size: `13`), add this entry to the existing tab
 ```lua
 ["plainui_badge_font_size"] = 15,
 ```
+
+## Adding tabs from another plugin
+
+A plugin can add its own tab to the library title bar, after the built-in ones. Register it through KOReader's `PluginShare` when your plugin's `main.lua` loads, so it does not depend on the plugin load order and does nothing if Plain UI is not installed:
+
+```lua
+local PluginShare = require("pluginshare")
+
+PluginShare.plainui_extra_tabs = PluginShare.plainui_extra_tabs or {}
+table.insert(PluginShare.plainui_extra_tabs, {
+    key = "my_plugin",          -- unique; built-in keys are books, series, authors and tags
+    text = _("My plugin"),
+    callback = function(file_manager)
+        -- open your screen
+    end,
+    hold_callback = nil,        -- optional
+})
+```
+
+Tabs open their own screen, so they never show as selected. Tabs that are malformed, reuse a key or do not fit next to the status icons are left out, with a warning in the log.
 
 ## Credits
 

@@ -3,6 +3,7 @@ local suites = {
     "tests/filter_state_test.lua",
     "tests/virtual_leaf_test.lua",
     "tests/tab_view_options_test.lua",
+    "tests/extra_tabs_test.lua",
     "tests/metadata_sort_test.lua",
     "tests/history_sort_test.lua",
     "tests/recent_books_test.lua",
