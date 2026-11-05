@@ -16,6 +16,7 @@ local suites = {
     "tests/navigation_preview_test.lua",
     "tests/return_footer_test.lua",
     "tests/stats_provider_test.lua",
+    "tests/hidden_tabs_test.lua",
 }
 
 local function quote(value)

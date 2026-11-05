@@ -9,6 +9,7 @@ local Event = require("ui/event")
 local FileManager = require("apps/filemanager/filemanager")
 local FileChooser = require("ui/widget/filechooser")
 local FocusManager = require("ui/widget/focusmanager")
+local HiddenTabs = require("modules.hidden_tabs")
 local Font = require("ui/font")
 local Geom = require("ui/geometry")
 local HistorySort = require("modules.history_sort")
@@ -343,14 +344,14 @@ function MetadataTabsTitleBar:init()
     }
     self.tab_label_height = self.books_button.label_container.dimen.h
     self.back_chevron_hit_width = self.tab_label_height + self.tab_padding_h
+    self.visible_tabs = HiddenTabs.filter({ self.books_tab, self.series_tab, self.authors_tab, self.tags_tab })
     self.tabs_group = HorizontalGroup:new{
         align = "bottom",
         allow_mirroring = false,
-        self.books_tab,
-        self.series_tab,
-        self.authors_tab,
-        self.tags_tab,
     }
+    for _, tab in ipairs(self.visible_tabs) do
+        table.insert(self.tabs_group, tab)
+    end
     local tabs_size = self.tabs_group:getSize()
     self.titlebar_height = math.max(self.titlebar_height, tabs_size.h)
     local titlebar_body_height = self.titlebar_height
@@ -965,13 +966,10 @@ FileChooser.getSortingFunction = function(self, collate, reverse_collate)
 end
 
 function MetadataTabsTitleBar:generateHorizontalLayout()
-    local row = {
-        self.back_button,
-        self.books_button,
-        self.series_button,
-        self.authors_button,
-        self.tags_button,
-    }
+    local row = { self.back_button }
+    for _, tab in ipairs(self.visible_tabs) do
+        table.insert(row, tab.button)
+    end
     table.insert(row, self.frontlight_button)
     table.insert(row, self.night_mode_button)
     table.insert(row, self.wifi_button)
@@ -982,13 +980,10 @@ function MetadataTabsTitleBar:generateHorizontalLayout()
 end
 
 function MetadataTabsTitleBar:generateVerticalLayout()
-    local layout = {
-        { self.back_button },
-        { self.books_button },
-        { self.series_button },
-        { self.authors_button },
-        { self.tags_button },
-    }
+    local layout = { { self.back_button } }
+    for _, tab in ipairs(self.visible_tabs) do
+        table.insert(layout, { tab.button })
+    end
     table.insert(layout, { self.frontlight_button })
     table.insert(layout, { self.night_mode_button })
     table.insert(layout, { self.wifi_button })

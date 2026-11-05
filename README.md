@@ -69,6 +69,14 @@ To enlarge cover badges (default size: `13`), add this entry to the existing tab
 ["plainui_badge_font_size"] = 15,
 ```
 
+To hide tabs from the library title bar, add this entry the same way. `series`, `authors` and `tags` can be hidden; `books` always stays:
+
+```lua
+["plainui_hidden_tabs"] = { ["tags"] = true },
+```
+
+The filters in the metadata results keep working, including the ones for hidden tabs.
+
 ## Credits
 
 Please visit [plainui.koplugin](https://github.com/quanganhdo/plainui.koplugin) for the latest updates.
